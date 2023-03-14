@@ -1,5 +1,10 @@
+import { extend } from '../shared';
+
 class ReactiveEffect {
   private _fn: any;
+  deps = [];
+  active = true;
+  onStop?: () => void;
 
   constructor(fn, public scheduler?) {
     this._fn = fn;
@@ -9,6 +14,24 @@ class ReactiveEffect {
     activeEffect = this;
     return this._fn();
   }
+
+  stop() {
+    // 多次清空只执行一次
+    if (this.active) {
+      cleanupEffect(this);
+      if (this.onStop) {
+        this.onStop();
+      }
+      this.active = false;
+    }
+  }
+}
+
+// 清除 effect
+function cleanupEffect(effect) {
+  effect.deps.forEach((dep: any) => {
+    dep.delete(effect);
+  });
 }
 
 // 依赖收集
@@ -19,13 +42,19 @@ export function track(target, key) {
     depsMap = new Map();
     targetMap.set(target, depsMap);
   }
+
   let dep = depsMap.get(key);
   if (!dep) {
     dep = new Set();
     depsMap.set(key, dep);
   }
 
+  if (!activeEffect) {
+    return;
+  }
+
   dep.add(activeEffect);
+  activeEffect.deps.push(dep);
 }
 
 // 触发依赖
@@ -46,7 +75,16 @@ let activeEffect;
 export function effect(fn, options: any = {}) {
   // fn
   const _effect = new ReactiveEffect(fn, options.scheduler);
+  // options
+  extend(_effect, options);
+
   _effect.run();
 
-  return _effect.run.bind(_effect);
+  const runner: any = _effect.run.bind(_effect);
+  runner.effect = _effect;
+  return runner;
+}
+
+export function stop(runner) {
+  runner.effect.stop();
 }
