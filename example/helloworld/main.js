@@ -1,3 +1,7 @@
-import App from './App.js';
+import { createApp } from '../../lib/guide-mini-vue.esm.js';
+import { App } from './App.js';
 
-createApp(App).mount('#root');
+const rootContainer = document.querySelector('#root');
+createApp(App).mount(rootContainer);
+
+console.log('test');
