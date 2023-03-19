@@ -4,4 +4,5 @@ export function createVNode(type, props?, children?) {
     props,
     children
   };
+  return vnode;
 }
