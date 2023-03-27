@@ -1,7 +1,7 @@
 import { ref, h } from '../../lib/guide-mini-vue.esm.js';
 
-const nextChildren = 'newChildren';
 const prevChildren = [h('div', {}, 'A'), h('div', {}, 'B')];
+const nextChildren = 'newChildren';
 
 export default {
   name: 'ArrayToText',
