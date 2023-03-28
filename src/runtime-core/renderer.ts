@@ -186,7 +186,6 @@ export function createRenderer(options) {
       // 遍历比较旧节点与新节点
       for (let i = s1; i <= e1; i++) {
         const prevChild = c1[i];
-        let newIndex;
 
         // 新节点全部添加完成，直接删除剩下的旧的尾节点
         if (patched >= toBePatched) {
@@ -194,12 +193,13 @@ export function createRenderer(options) {
           continue;
         }
 
+        let newIndex;
         // 通过旧节点 key 获取其在新节点的 index
         if (prevChild.key !== null) {
           newIndex = keyToNewIndexMap.get(prevChild.key);
         } else {
           // 没有 key 则遍历寻找对应 index
-          for (let j = s2; j < e2; j++) {
+          for (let j = s2; j <= e2; j++) {
             if (isSameVNodeType(prevChild, c2[j])) {
               newIndex = j;
               break;
