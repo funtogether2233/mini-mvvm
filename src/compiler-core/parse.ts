@@ -29,8 +29,29 @@ function parseChildren(context) {
     }
   }
 
+  if (!node) {
+    node = parseText(context);
+  }
+
   nodes.push(node);
   return nodes;
+}
+
+function parseText(context) {
+  const content = parseTextData(context, context.source.length);
+
+  return { type: NodeTypes.TEXT, content };
+}
+
+// 获取并推进内容
+function parseTextData(context, length) {
+  // 获取
+  const content = context.source.slice(0, length);
+
+  // 推进
+  advanceBy(context, content.length);
+
+  return content;
 }
 
 function parseElement(context) {
@@ -67,11 +88,11 @@ function parseInterpolation(context) {
 
   // 获取 content 和其长度
   const rawContentLength = closeIndex - openDelimiter.length;
-  const rawContent = context.source.slice(0, rawContentLength);
+  const rawContent = parseTextData(context, rawContentLength);
   const content = rawContent.trim();
 
   // 删除插值内容和右定界符
-  advanceBy(context, rawContentLength + closeDelimiter.length);
+  advanceBy(context, closeDelimiter.length);
 
   return {
     type: NodeTypes.INTERPOLATION,
