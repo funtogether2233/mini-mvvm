@@ -11,34 +11,65 @@ const closeDelimiter = '}}';
 
 export function baseParse(content: string) {
   const context = createParserContext(content);
-  return createRoot(parseChildren(context));
+  return createRoot(parseChildren(context, []));
 }
 
-function parseChildren(context) {
-  const s = context.source;
+function parseChildren(context, ancestors) {
   const nodes: any = [];
-  let node;
 
-  if (s.startsWith(openDelimiter)) {
-    // 插值
-    node = parseInterpolation(context);
-  } else if (s[0] === '<') {
-    // element 标签
-    if (/[a-z]/i.test(s[1])) {
-      node = parseElement(context);
+  while (!isEnd(context, ancestors)) {
+    let node;
+    const s = context.source;
+
+    if (s.startsWith(openDelimiter)) {
+      // 插值
+      node = parseInterpolation(context);
+    } else if (s[0] === '<') {
+      // element 标签
+      if (/[a-z]/i.test(s[1])) {
+        node = parseElement(context, ancestors);
+      }
     }
-  }
 
-  if (!node) {
-    node = parseText(context);
-  }
+    if (!node) {
+      node = parseText(context);
+    }
 
-  nodes.push(node);
+    nodes.push(node);
+  }
   return nodes;
 }
 
+function isEnd(context, ancestors) {
+  // 遇到结束标签
+  const s = context.source;
+  if (s.startsWith('</')) {
+    for (let i = ancestors.length - 1; i >= 0; i--) {
+      const tag = ancestors[i].tag;
+      if (startsWithEndTagOpen(s, tag)) {
+        return true;
+      }
+    }
+  }
+
+  // 有值
+  return !s;
+}
+
 function parseText(context) {
-  const content = parseTextData(context, context.source.length);
+  let endIndex = context.source.length;
+  let endTokens = ['<', openDelimiter];
+
+  for (let i = 0; i < endTokens.length; i++) {
+    // 遇到插值
+    const index = context.source.indexOf(endTokens[i]);
+    if (index !== -1 && endIndex > index) {
+      endIndex = index;
+    }
+  }
+
+  const content = parseTextData(context, endIndex);
+  console.log(content);
 
   return { type: NodeTypes.TEXT, content };
 }
@@ -54,11 +85,34 @@ function parseTextData(context, length) {
   return content;
 }
 
-function parseElement(context) {
+function parseElement(context, ancestors) {
   // 两次执行 parseTag 删除标签
   const element = parseTag(context, TagType.Start);
-  parseTag(context, TagType.End);
+
+  // 收集 element
+  ancestors.push(element);
+
+  element.children = parseChildren(context, ancestors);
+
+  // 弹出 element
+  ancestors.pop();
+
+  // 头尾标签相同则解析
+  if (startsWithEndTagOpen(context.source, element.tag)) {
+    parseTag(context, TagType.End);
+  } else {
+    throw new Error(`缺少结束标签:${element.tag}`);
+  }
+
   return element;
+}
+
+// 以  </ 开头的且和 tag 一样
+function startsWithEndTagOpen(source: string, tag: string) {
+  return (
+    source.startsWith('</') &&
+    source.slice(2, 2 + tag.length).toLowerCase() === tag.toLowerCase()
+  );
 }
 
 function parseTag(context, type: TagType): any {
