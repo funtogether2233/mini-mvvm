@@ -21,11 +21,13 @@ export function generate(ast) {
   };
 }
 
-function genFunctionPreamble(ast, context) {
+function genFunctionPreamble(ast: any, context) {
   const { push } = context;
   const VueBinging = 'Vue';
   const aliasHelper = (s) => `${helperNameMap[s]}: _${helperNameMap[s]}`;
+  console.log(ast.helpers.length);
   if (ast.helpers.length > 0) {
+    console.log('yes');
     push(
       `const { ${ast.helpers.map(aliasHelper).join(', ')} } = ${VueBinging}`
     );
@@ -75,8 +77,8 @@ function genExpression(node, context) {
 
 function genInterpolation(node, context) {
   const { push, helper } = context;
-  push(`${helper[TO_DISPLAY_STRING]}(`);
-  genNode(node, context);
+  push(`${helper(TO_DISPLAY_STRING)}(`);
+  genNode(node.content, context);
   push(')');
 }
 
