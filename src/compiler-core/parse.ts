@@ -69,7 +69,6 @@ function parseText(context) {
   }
 
   const content = parseTextData(context, endIndex);
-  console.log(content);
 
   return { type: NodeTypes.TEXT, content };
 }
