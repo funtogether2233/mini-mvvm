@@ -20,8 +20,6 @@ function createTransformContext(root, options) {
 
 // dfs 遍历
 function traverseNode(node, context) {
-  console.log(node);
-
   const { nodeTransforms } = context;
   for (let i = 0; i < nodeTransforms.length; i++) {
     const transform = nodeTransforms[i];
