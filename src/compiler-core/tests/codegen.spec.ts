@@ -1,7 +1,9 @@
 import { generate } from '../codegen';
 import { baseParse } from '../parse';
 import { transform } from '../transform';
+import { transformElement } from '../transforms/transformElement';
 import { transformExpression } from '../transforms/transformExpression';
+import { transformText } from '../transforms/transformText';
 
 describe('codegen', () => {
   it('string', () => {
@@ -25,9 +27,9 @@ describe('codegen', () => {
   });
 
   it('element', () => {
-    const ast = baseParse('<div></div>');
+    const ast: any = baseParse('<div>hi, {{message}}</div>');
     transform(ast, {
-      nodeTransforms: []
+      nodeTransforms: [transformExpression, transformElement, transformText]
     });
     const { code } = generate(ast);
 

@@ -1,5 +1,10 @@
+import { isString } from '../shared';
 import { NodeTypes } from './ast';
-import { TO_DISPLAY_STRING, helperNameMap } from './runtimeHelpers';
+import {
+  CREATE_ELEMENT_VNODE,
+  TO_DISPLAY_STRING,
+  helperNameMap
+} from './runtimeHelpers';
 
 export function generate(ast) {
   const context = createCodegenContext();
@@ -25,9 +30,7 @@ function genFunctionPreamble(ast: any, context) {
   const { push } = context;
   const VueBinging = 'Vue';
   const aliasHelper = (s) => `${helperNameMap[s]}: _${helperNameMap[s]}`;
-  console.log(ast.helpers.length);
   if (ast.helpers.length > 0) {
-    console.log('yes');
     push(
       `const { ${ast.helpers.map(aliasHelper).join(', ')} } = ${VueBinging}`
     );
@@ -65,9 +68,61 @@ function genNode(node, context) {
       genExpression(node, context);
       break;
 
+    case NodeTypes.ELEMENT:
+      genElement(node, context);
+      break;
+
+    case NodeTypes.COMPOUND_EXPRESSION:
+      genCompoundExpression(node, context);
+      break;
+
     default:
       break;
   }
+}
+
+function genCompoundExpression(node, context) {
+  const { push } = context;
+  const children = node.children;
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
+    if (isString(child)) {
+      push(child);
+    } else {
+      genNode(child, context);
+    }
+  }
+}
+
+function genElement(node, context) {
+  const { push, helper } = context;
+  const { tag, children, props } = node;
+  push(`${helper(CREATE_ELEMENT_VNODE)}(`);
+  genNodeList(genNullableArgs([tag, props, children]), context);
+  // genNode(children, context);
+  push(')');
+}
+
+function genNodeList(nodes, context) {
+  const { push } = context;
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+
+    if (isString(node)) {
+      push(`${node}`);
+    } else {
+      genNode(node, context);
+    }
+    // node 和 node 之间需要加上 逗号(,)
+    // 但是最后一个不需要 "div", [props], [children]
+    if (i < nodes.length - 1) {
+      push(', ');
+    }
+  }
+}
+
+function genNullableArgs(args) {
+  return args.map((arg) => arg || 'null');
 }
 
 function genExpression(node, context) {
